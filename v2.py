@@ -64,7 +64,14 @@ def generate_rounds(filename):
 			writer.writeheader()
 			for i in range(num_teams//2):
 				writer.writerow({"Room Number" : i+1, "Team 1" : " ".join(l1[(i+13)%(num_teams//2)]), "vs" : "vs" , "Team 2": " ".join(l2[(i+15)%(num_teams//2)])}) 
-		return "Great success!"
+		with open('./downloads/Round4.csv', 'w') as csvfile:
+			fieldnames = ["Room Number" ,"Team 1","vs", "Team 2"]
+			writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+			writer.writeheader()
+			for i in range(num_teams//2):
+				writer.writerow({"Room Number" : i+1, "Team 1" : " ".join(l1[(i+13)%(num_teams//2)]), "vs" : "vs" , "Team 2": " ".join(l2[(i+20)%(num_teams//2)])}) 	
+			
+			return "Great success!"
 	return "Great success\n\n\nNAAAAAAT!!!"
 
 @app.route('/')
