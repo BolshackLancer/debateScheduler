@@ -1,101 +1,117 @@
+import shutil
+
 from flask import Flask, render_template, request, send_file
 from werkzeug import secure_filename
 import os, csv, random, zipfile
+import pandas as pd
 
 app = Flask(__name__)
 
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-ALLOWED_EXTENSIONS = set(['csv'])
+ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
+
 
 def allowed_file(filename):
-	print(filename.rsplit('.',1)[1])
-	allowed = '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-	#print(x)
-	return allowed
+    print(filename.rsplit('.', 1)[1])
+    allowed = '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+    return allowed
+
+
+def write_to_csv(rounds, round_num, group_name):
+    file_path = "./downloads/" + group_name + "_" + round_num + ".csv"
+    with open(file_path, 'w') as csv_file:
+        fieldnames = ["Room Number", "Team 1", "vs", "Team 2"]
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for i in range(len(rounds)):
+            writer.writerow({"Room Number": rounds[i][0], "Team 1": " ".join([rounds[i][1]]), "vs": "vs",
+                             "Team 2": " ".join([rounds[i][2]])})
+
+
+def make_round(teams_a, teams_b, already_matched):
+    random.shuffle(teams_a)
+    random.shuffle(teams_b)
+    teams_b_used = list()
+    rounds = list()
+    room_number = 1
+    for i in teams_a:
+        for j in teams_b:
+            if j not in teams_b_used and j not in already_matched[i]:
+                if j != "No Team, Bye":
+                    rounds.append([room_number, i, j])
+                    room_number += 1
+                else:
+                    rounds.append(["No room", i, j])
+                already_matched[i].append(j)
+                teams_b_used.append(j)
+                break
+    return rounds
+
+
+def do_stuff(df, num_rounds, group_name):
+    df.drop([df.columns[0]], axis='columns', inplace=True)
+    df.drop([0, 1, 2, 3], inplace=True)
+    df = df[df[3] == df[3]]
+    team_codes = df[2].tolist()
+    team_names = df[3].tolist()
+    teams = list()
+    for i in range(len(team_names)):
+        if team_names[i].strip() != "":
+            teams.append(team_codes[i].strip() + " " + team_names[i].strip())
+    teams = list(set(teams))
+    random.shuffle(teams)
+    if len(teams) % 2 != 0:
+        teams.append("No Team, Bye")
+    half_teams = int(len(teams) / 2)
+    teams_a = teams[:half_teams]
+    teams_b = teams[half_teams:]
+    already_matched = dict()
+    for i in teams_a:
+        already_matched[i] = list()
+    for i in range(num_rounds):
+        rounds = make_round(teams_a, teams_b, already_matched)
+        write_to_csv(rounds, "round_" + str(i+1), group_name)
+
 
 def generate_rounds(filename):
-	filepath = './uploads/'+str(filename)
-	with open(filepath, 'r', encoding = "latin-1") as f:
-		reader = csv.reader(f)
-		your_list = list(reader)
-	#your_list=your_list[4:]
-	for i in your_list:
-		while len(i)>4:
-			i.pop(3)
-		i.pop(0)
-		i.pop(2)
-	del your_list[1::3]
-	del your_list[1::2]
+    if os.path.exists("./downloads"):
+        shutil.rmtree("./downloads")
+        os.mkdir("./downloads")
+        filepath = './uploads/' + str(filename)
+        xls = pd.ExcelFile(filepath)
+        df1 = pd.read_excel(xls, 'Lions Registration', header=None)
+        df2 = pd.read_excel(xls, 'Cubs Registration', header=None)
+        do_stuff(df1, 3, "lions")
+        do_stuff(df2, 3, "cubs")
 
-
-
-	num_teams = len(your_list)
-	if num_teams % 2 == 1:
-		your_list.append(["No team", "Bye"])
-		num_teams+=1
-	l1_indices = random.sample(range(num_teams), num_teams//2)
-	l1 = list()
-	l2=list()
-	for i in range(num_teams):
-		if i in l1_indices:
-			l1.append(your_list[i])
-		else:
-			l2.append(your_list[i])
-	random.shuffle(l1)
-	if len(l1) == len(l2):
-		with open('./downloads/Round1.csv', 'w') as csvfile:
-			fieldnames = ["Room Number" ,"Team 1","vs", "Team 2"]
-			writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-			writer.writeheader()
-			for i in range(num_teams//2):
-				writer.writerow({"Room Number" : i+1, "Team 1" : " ".join(l1[i]), "vs" : "vs" , "Team 2": " ".join(l2[i])})
-
-		with open('./downloads/Round2.csv', 'w') as csvfile:
-			fieldnames = ["Room Number" ,"Team 1","vs", "Team 2"]
-			writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-			writer.writeheader()
-			for i in range(num_teams//2):
-				writer.writerow({"Room Number" : i+1, "Team 1" : " ".join(l1[(i+3)%(num_teams//2)]), "vs" : "vs" , "Team 2": " ".join(l2[(i+4)%(num_teams//2)])}) 
-		with open('./downloads/Round3.csv', 'w') as csvfile:
-			fieldnames = ["Room Number" ,"Team 1","vs", "Team 2"]
-			writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-			writer.writeheader()
-			for i in range(num_teams//2):
-				writer.writerow({"Room Number" : i+1, "Team 1" : " ".join(l1[(i+13)%(num_teams//2)]), "vs" : "vs" , "Team 2": " ".join(l2[(i+15)%(num_teams//2)])}) 
-		return "Great success!"
-	return "Great success\n\n\nNAAAAAAT!!!"
 
 @app.route('/')
 def login():
-	print("hello world")
-	return render_template('index.html')
+    print("hello world")
+    return render_template('index.html')
 
-@app.route('/uploader', methods = ['GET', 'POST'])
+
+@app.route('/uploader', methods=['GET', 'POST'])
 def upload_file():
-	#print("In uploader function")
-	if request.method == 'POST':
-		f = request.files['file']
-		if f:
-			print("f")
-		if allowed_file(f.filename):
-			print("allowed_file")
-		if f and allowed_file(f.filename):
-			curpath = os.path.abspath(os.curdir)
-			print ("Current path is: %s", (curpath))
-			filename = secure_filename(f.filename)
-			f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-			#return redirect(url_for('index'))
-			if generate_rounds(filename) == "Great success!":
-				zipf = zipfile.ZipFile('Rounds.zip','w', zipfile.ZIP_DEFLATED)
-				for root,dirs, files in os.walk('./downloads/'):
-					for file in files:
-						zipf.write('./downloads/'+file)
-				zipf.close()
-				return send_file('Rounds.zip',mimetype = 'zip', attachment_filename= 'Rounds.zip',as_attachment = True)
+    # print("In uploader function")
+    if request.method == 'POST':
+        f = request.files['file']
+        if f and allowed_file(f.filename):
+            curpath = os.path.abspath(os.curdir)
+            print("Current path is: %s", (curpath))
+            filename = secure_filename(f.filename)
+            f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            generate_rounds(filename)
+            zipf = zipfile.ZipFile('Rounds.zip', 'w', zipfile.ZIP_DEFLATED)
+            for root, dirs, files in os.walk('./downloads/'):
+                for file in files:
+                    zipf.write('./downloads/' + file)
+            zipf.close()
+            return send_file('Rounds.zip', mimetype='zip', attachment_filename='Rounds.zip', as_attachment=True)
+    return "File upload unsuccessful"
 
-		return "File upload unsuccessful"
 
 if __name__ == '__main__':
-	app.run(debug = True)
+    app.run(debug=True)
