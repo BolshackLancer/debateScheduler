@@ -58,8 +58,11 @@ def do_stuff(df, num_rounds, group_name):
     team_names = df[3].tolist()
     teams = list()
     for i in range(len(team_names)):
-        if team_names[i].strip() != "":
-            teams.append(team_codes[i].strip() + " " + team_names[i].strip())
+        try:
+            if team_names[i].strip() != "":
+                teams.append(team_codes[i].strip() + " " + team_names[i].strip())
+        except:
+            print("Exception has occured trying to strip " + team_names[i] + " or " + team_codes[i])
     teams = list(set(teams))
     random.shuffle(teams)
     if len(teams) % 2 != 0:
@@ -72,7 +75,7 @@ def do_stuff(df, num_rounds, group_name):
         already_matched[i] = list()
     for i in range(num_rounds):
         rounds = make_round(teams_a, teams_b, already_matched)
-        write_to_csv(rounds, "round_" + str(i+1), group_name)
+        write_to_csv(rounds, "round_" + str(i + 1), group_name)
 
 
 def generate_rounds(filename, num_rounds):
@@ -98,7 +101,7 @@ def upload_file():
     if request.method == 'POST':
         f = request.files['file']
         num_rounds = int(request.form["num_rounds"])
-        if num_rounds<1:
+        if num_rounds < 1:
             raise Exception("invalid number of rounds entered")
         print(num_rounds)
         if f and allowed_file(f.filename):
@@ -115,6 +118,7 @@ def upload_file():
             return send_file('Rounds.zip', mimetype='zip', attachment_filename='Rounds.zip', as_attachment=True)
         else:
             raise Exception("Something went wrong. please contact a dev")
+
 
 if __name__ == '__main__':
     app.run(debug=True)
