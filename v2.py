@@ -75,7 +75,7 @@ def do_stuff(df, num_rounds, group_name):
         write_to_csv(rounds, "round_" + str(i+1), group_name)
 
 
-def generate_rounds(filename):
+def generate_rounds(filename, num_rounds):
     if os.path.exists("./downloads"):
         shutil.rmtree("./downloads")
         os.mkdir("./downloads")
@@ -83,8 +83,8 @@ def generate_rounds(filename):
         xls = pd.ExcelFile(filepath)
         df1 = pd.read_excel(xls, 'Lions Registration', header=None)
         df2 = pd.read_excel(xls, 'Cubs Registration', header=None)
-        do_stuff(df1, 3, "lions")
-        do_stuff(df2, 3, "cubs")
+        do_stuff(df1, num_rounds, "lions")
+        do_stuff(df2, num_rounds, "cubs")
 
 
 @app.route('/')
@@ -95,15 +95,16 @@ def login():
 
 @app.route('/uploader', methods=['GET', 'POST'])
 def upload_file():
-    # print("In uploader function")
     if request.method == 'POST':
         f = request.files['file']
+        num_rounds = int(request.form["num_rounds"])
+        print(num_rounds)
         if f and allowed_file(f.filename):
             curpath = os.path.abspath(os.curdir)
             print("Current path is: %s", (curpath))
             filename = secure_filename(f.filename)
             f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            generate_rounds(filename)
+            generate_rounds(filename, num_rounds)
             zipf = zipfile.ZipFile('Rounds.zip', 'w', zipfile.ZIP_DEFLATED)
             for root, dirs, files in os.walk('./downloads/'):
                 for file in files:
