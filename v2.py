@@ -98,6 +98,8 @@ def upload_file():
     if request.method == 'POST':
         f = request.files['file']
         num_rounds = int(request.form["num_rounds"])
+        if num_rounds<1:
+            raise Exception("invalid number of rounds entered")
         print(num_rounds)
         if f and allowed_file(f.filename):
             curpath = os.path.abspath(os.curdir)
@@ -111,8 +113,8 @@ def upload_file():
                     zipf.write('./downloads/' + file)
             zipf.close()
             return send_file('Rounds.zip', mimetype='zip', attachment_filename='Rounds.zip', as_attachment=True)
-    return "File upload unsuccessful"
-
+        else:
+            raise Exception("Something went wrong. please contact a dev")
 
 if __name__ == '__main__':
     app.run(debug=True)
