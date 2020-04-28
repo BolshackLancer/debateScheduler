@@ -62,7 +62,8 @@ def do_stuff(df, num_rounds, group_name):
             if team_names[i].strip() != "":
                 teams.append(team_codes[i].strip() + " " + team_names[i].strip())
         except:
-            print("Exception has occured trying to strip " + team_names[i] + " or " + team_codes[i])
+            error_msg = "Exception has occured trying to strip " + str(team_names[i]) + " or " + str(team_codes[i])
+            print(error_msg)
     teams = list(set(teams))
     random.shuffle(teams)
     if len(teams) % 2 != 0:
