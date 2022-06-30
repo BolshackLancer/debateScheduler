@@ -44,10 +44,15 @@ def make_round(teams_a, teams_b, already_matched):
                     room_number += 1
                 else:
                     rounds.append(["No room", i, j])
-                already_matched[i].append(j)
                 teams_b_used.append(j)
                 break
-    return rounds
+    if len(rounds) == len(teams_a):
+        for round in rounds:
+            already_matched[round[1]].append(round[2])
+        return rounds
+    else:
+        return make_round(teams_a, teams_b, already_matched)    #if it's stupid but it works, it ain't stupid
+    
 
 
 def do_stuff(df, num_rounds, group_name):

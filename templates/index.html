@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<link rel="stylesheet" type= "text/css" href="{{ url_for('static',filename='styles/index.css') }}">
 	<title>Behes Round Scheduler</title>
 </head>
 <body>
@@ -10,5 +11,12 @@
 		number of rounds <input type="number" name = "num_rounds" placeholder="Number of rounds"/><br><br>
 		<input type = "submit" value="submit" />
 	</form>
+
+	<br/>
+	<br/>
+	<small>Fixed the issue where some teams are randomly not showing up in a round</small>
+	<br/>
+	<small>*However, the program will commit suicide if the number of requested rounds is more than half the total number of teams</small>
+
 </body>
 </html>
