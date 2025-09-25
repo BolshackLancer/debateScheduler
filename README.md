@@ -1,3 +1,8 @@
+# debateScheduler
+Behes Debate Scheduler - flask edition
+
+Now deployed on Vercel!
+
 # Debate Scheduler
 
 A simple tool to schedule debates.
